@@ -3,7 +3,7 @@ Bugfixes of Codesys PRO_JSON library by Pro Electric (Author: TVM)
 
 Source: https://forge.codesys.com/lib/pro-json/home/Home/
 
-## Version 19
+## Version 19 : Array errors fix, rootless json
 
 ### Array Export Repair
 
