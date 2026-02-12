@@ -4,7 +4,8 @@ Bugfixes of Codesys PRO_JSON library by Pro Electric (Author: TVM)
 Source: https://forge.codesys.com/lib/pro-json/home/Home/
 
 - **Ver 19**: array issue fixes, rootless json
-- **Ver 20**: multidimensional arrays + ver 19
+- **Ver 20**: Ver 19 +  multidimensional arrays
+- **Ver 21**: Ver 20 + option to add single long string field to the end of the root object. 
 
 
 ## Version 19 : Array errors fix, rootless json
@@ -42,3 +43,12 @@ Source: https://forge.codesys.com/lib/pro-json/home/Home/
 - Overflow dimensions beyond GPL_JSON.MAX_ARRAY_DIMENSIONS are now policy-driven (flatten-to-last vs non-flatten branch).
 - Existing Rootless and IgnoreNull behavior remains unchanged.
 - No public interface/signature changes; patch is backward-compatible for existing 1D and non-array usage.
+
+## Version 21: Long Custom Field Support
+
+- Added optional custom root-level string field injection in `STRUCT_TO_JSON` for long texts.
+- Custom field is configured before compose (via `SetCustomField` method)
+- Custom value is passed by pointer to String, so no large JSONVAR value copy is required.
+- Added explicit precheck for buffer capacity before custom-field append; returns error if it would exceed GPL_JSON.MAX_JSON_STRING.
+- Added JSON escaping while writing pointer text (", \, control chars), preserving valid JSON output.
+- Existing behavior is unchanged when custom field is not enabled.
