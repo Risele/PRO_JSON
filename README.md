@@ -1,5 +1,5 @@
 # PRO_JSON
-Bugfixes of Codesys PRO_JSON library by Pro Electric (Author: TVM)
+Bugfixes and improvements of Codesys PRO_JSON library by Pro Electric (Author: TVM)
 
 Source: https://forge.codesys.com/lib/pro-json/home/Home/
 
@@ -52,3 +52,7 @@ Source: https://forge.codesys.com/lib/pro-json/home/Home/
 - Added explicit precheck for buffer capacity before custom-field append; returns error if it would exceed GPL_JSON.MAX_JSON_STRING.
 - Added JSON escaping while writing pointer text (", \, control chars), preserving valid JSON output.
 - Existing behavior is unchanged when custom field is not enabled.
+
+## PRO_JSON File IO
+- set of FBs to read/save JSON structs to text files. Compatible with last version.
+- Import it as PLCopen XML (seems to be imported to the top 'Application')
