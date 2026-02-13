@@ -6,7 +6,7 @@ Source: https://forge.codesys.com/lib/pro-json/home/Home/
 - **Ver 19**: array issue fixes, rootless json
 - **Ver 20**: Ver 19 +  multidimensional arrays
 - **Ver 21**: Ver 20 + option to add single long string field to the end of the root object. 
-
+- **PRO_JSON File IO** - set of FBs to read/save JSON structs to text files. Compatible with last version.
 
 ## Version 19 : Array errors fix, rootless json
 
