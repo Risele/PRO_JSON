@@ -1,0 +1,1079 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0200">
+  <fileHeader companyName="" productName="CODESYS" productVersion="CODESYS V3.5 SP17 Patch 3" creationDateTime="2026-02-13T14:33:38.6413633" />
+  <contentHeader name="Template" version="3.5.17.30" modificationDateTime="2026-02-13T14:07:44.0721923" organization="organization">
+    <coordinateInfo>
+      <fbd>
+        <scaling x="1" y="1" />
+      </fbd>
+      <ld>
+        <scaling x="1" y="1" />
+      </ld>
+      <sfc>
+        <scaling x="1" y="1" />
+      </sfc>
+    </coordinateInfo>
+    <addData>
+      <data name="http://www.3s-software.com/plcopenxml/projectinformation" handleUnknown="implementation">
+        <ProjectInformation>
+          <property name="Company" type="string">Company</property>
+          <property name="CompiledLibraryCompatibilityVersion" type="string">CODESYS V3.5 SP16 Patch 3</property>
+          <property name="Project" type="string">Project</property>
+          <property name="Title" type="string">Template</property>
+          <property name="Version" type="version">3.5.17.30</property>
+        </ProjectInformation>
+      </data>
+    </addData>
+  </contentHeader>
+  <types>
+    <dataTypes>
+      <dataType name="e_SaveReadJSONFileStates">
+        <baseType>
+          <enum>
+            <values>
+              <value name="STATE_IDLE" value="0" />
+              <value name="STATE_COMBINE" />
+              <value name="STATE_COMPOSE" />
+              <value name="STATE_SAVE" />
+              <value name="STATE_FINISH" />
+              <value name="STATE_PARSE" />
+              <value name="STATE_READ" />
+            </values>
+          </enum>
+        </baseType>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+            <Attributes>
+              <Attribute Name="qualified_only" Value="" />
+              <Attribute Name="strict" Value="" />
+            </Attributes>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>3d0f48de-b9d5-400f-93f8-ba905ed4ddff</ObjectId>
+          </data>
+        </addData>
+      </dataType>
+    </dataTypes>
+    <pous>
+      <pou name="FB_ReadJSONFile" pouType="functionBlock">
+        <interface>
+          <localVars constant="true">
+            <variable name="SplitSize">
+              <type>
+                <INT />
+              </type>
+              <initialValue>
+                <simpleValue value="1024" />
+              </initialValue>
+            </variable>
+          </localVars>
+          <inputVars>
+            <variable name="xStart">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="sFileName">
+              <type>
+                <string length="255" />
+              </type>
+            </variable>
+            <variable name="pJSOBJ">
+              <type>
+                <pointer>
+                  <baseType>
+                    <array>
+                      <dimension lower="1" upper="GPL_JSON.MAX_VARS" />
+                      <baseType>
+                        <derived name="JSONVAR" />
+                      </baseType>
+                    </array>
+                  </baseType>
+                </pointer>
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">pointer to local structure made up of type JSONVAR</xhtml>
+              </documentation>
+            </variable>
+            <variable name="udiSize">
+              <type>
+                <UDINT />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">SHOULD BE EQUAL TO SIZEOF(JSONOBJ) , </xhtml>
+              </documentation>
+            </variable>
+          </inputVars>
+          <outputVars>
+            <variable name="xBusy">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xDone">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xError">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+          </outputVars>
+          <localVars>
+            <variable name="state">
+              <type>
+                <derived name="e_SaveReadJSONFileStates" />
+              </type>
+              <initialValue>
+                <simpleValue value="e_SaveReadJSONFileStates.STATE_IDLE" />
+              </initialValue>
+            </variable>
+            <variable name="xStartRE">
+              <type>
+                <derived name="R_TRIG" />
+              </type>
+            </variable>
+            <variable name="xAutoReset">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="TRUE" />
+              </initialValue>
+            </variable>
+            <variable name="fread">
+              <type>
+                <derived name="FB_ReadTxtFile" />
+              </type>
+            </variable>
+            <variable name="ParseJSON">
+              <type>
+                <derived name="JSON_TO_STRUCT" />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Part of PRO_JSON 	</xhtml>
+              </documentation>
+            </variable>
+            <variable name="sContent">
+              <type>
+                <string length="GPL_JSON.MAX_JSON_STRING" />
+              </type>
+            </variable>
+            <variable name="sLastError">
+              <type>
+                <string />
+              </type>
+            </variable>
+          </localVars>
+        </interface>
+        <body>
+          <ST>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">xStartRE(CLK:=xStart);
+CASE state OF
+	e_SaveReadJSONFileStates.STATE_IDLE:
+		IF xStartRE.Q THEN
+			state:=e_SaveReadJSONFileStates.STATE_READ;
+			xDone:=FALSE;
+			xBusy:=TRUE;
+			xError:=FALSE;
+			sLastError:='';
+			sContent:='';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_READ:
+		fread(sFileName:=sFileName,
+			result:=sContent,
+			xStart:=TRUE);	
+	
+		IF fread.xDone THEN
+			state:=e_SaveReadJSONFileStates.STATE_PARSE;
+		END_IF
+		IF fread.xError THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+			xError:=TRUE;
+			sLastError:='File reading';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_PARSE:
+		ParseJSON(JSONString:=ADR(sContent),
+				JSONStringSize:=SIZEOF(sContent),
+				JSONVars:=pJSOBJ,
+				NumberOfVars:=udiSIZE/SIZEOF(JSONVAR),
+				Execute:=TRUE);
+
+		IF  ParseJSON.Done THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+		END_IF
+		IF ParseJSON.Error THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+			xError:=TRUE;
+			sLastError:='JSON parsing';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_FINISH:
+		xBusy:=FALSE;
+		xDone:=TRUE;
+
+		IF xAutoReset THEN
+			Reset();
+		END_IF
+		ParseJSON(Execute:=TRUE);
+		state:=e_SaveReadJSONFileStates.STATE_IDLE;
+END_CASE
+</xhtml>
+          </ST>
+        </body>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="16fc7399-90e7-49b7-b8c0-ab1c715b357c">
+              <interface>
+                <returnType>
+                  <BOOL />
+                </returnType>
+              </interface>
+              <body>
+                <ST>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">state:=e_SaveReadJSONFileStates.STATE_IDLE;
+sContent:='';
+ParseJSON(Execute:=FALSE);
+ParseJSON.ClearAll();
+xError:=FALSE;
+Reset:=TRUE;
+xStartRE(CLK:=FALSE);</xhtml>
+                </ST>
+              </body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>88a5bfd3-a029-4ebe-b27f-b22064eb90fa</ObjectId>
+          </data>
+        </addData>
+      </pou>
+      <pou name="FB_ReadTxtFile" pouType="functionBlock">
+        <interface>
+          <localVars constant="true">
+            <variable name="SplitSize">
+              <type>
+                <INT />
+              </type>
+              <initialValue>
+                <simpleValue value="1024" />
+              </initialValue>
+            </variable>
+          </localVars>
+          <inputVars>
+            <variable name="xStart">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="sFileName">
+              <type>
+                <derived name="REFERENCE TO STRING(255)" />
+              </type>
+            </variable>
+            <variable name="Result">
+              <type>
+                <derived name="REFERENCE TO STRING(GPL_JSON.MAX_JSON_STRING)" />
+              </type>
+            </variable>
+          </inputVars>
+          <outputVars>
+            <variable name="xBusy">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xDone">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xError">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+          </outputVars>
+          <localVars>
+            <variable name="fopen">
+              <type>
+                <derived name="FILE.Open" />
+              </type>
+            </variable>
+            <variable name="fread">
+              <type>
+                <derived name="FILE.Read" />
+              </type>
+            </variable>
+            <variable name="fclose">
+              <type>
+                <derived name="FILE.Close" />
+              </type>
+            </variable>
+            <variable name="xStartRE">
+              <type>
+                <derived name="R_TRIG" />
+              </type>
+            </variable>
+            <variable name="xAutoReset">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="TRUE" />
+              </initialValue>
+            </variable>
+            <variable name="step">
+              <type>
+                <derived name="Implicit_Enum__FB_ReadTxtFile__step" />
+              </type>
+              <addData>
+                <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+                  <Attributes>
+                    <Attribute Name="implicit_enum_type" Value="" />
+                  </Attributes>
+                </data>
+              </addData>
+            </variable>
+            <variable name="tempString">
+              <type>
+                <string length="GPL_JSON.MAX_JSON_STRING" />
+              </type>
+            </variable>
+            <variable name="endPos">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="subString">
+              <type>
+                <string length="SplitSize" />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Not more than CLEANSTRING.MAXSTRING;</xhtml>
+              </documentation>
+            </variable>
+            <variable name="cleanupCount">
+              <type>
+                <INT />
+              </type>
+              <initialValue>
+                <simpleValue value="0" />
+              </initialValue>
+            </variable>
+            <variable name="cleanupCounter">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="tmp">
+              <type>
+                <REAL />
+              </type>
+            </variable>
+            <variable name="startPos">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="finishPos">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="lenCopy">
+              <type>
+                <DINT />
+              </type>
+            </variable>
+            <variable name="pos">
+              <type>
+                <INT />
+              </type>
+            </variable>
+            <variable name="testChar">
+              <type>
+                <string length="1" />
+              </type>
+              <initialValue>
+                <simpleValue value="'&quot;'" />
+              </initialValue>
+            </variable>
+            <variable name="testStr">
+              <type>
+                <string length="1" />
+              </type>
+            </variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+              <Attributes>
+                <Attribute Name="contains_implicit_enum" />
+              </Attributes>
+            </data>
+          </addData>
+        </interface>
+        <body>
+          <ST>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">xStartRE(CLK:=xStart);
+CASE step OF
+	STEP_IDLE:
+		IF xStartRE.Q AND NOT xError THEN
+			step:=STEP_OPEN;
+			xDone:=FALSE;
+			xBusy:=TRUE;
+			xError:=FALSE;			
+		END_IF
+		
+		fopen(xExecute:=FALSE);
+    	fread(xExecute:=FALSE);
+		fclose(xExecute:=FALSE);
+	
+	STEP_OPEN:
+		fopen.sFileName:=sFileName;
+		fopen.eFileMode:=FILE.MODE.MREAD;
+		fopen.xExclusive:=TRUE;
+		fopen(xExecute:=TRUE);
+		
+		IF fopen.xDone THEN
+			step:=STEP_READ;
+		END_IF
+		IF fopen.xError THEN
+			step:=STEP_CLOSE;
+			xError:=TRUE;
+		END_IF
+		
+	STEP_READ:
+		Result:='';
+		fread.hFile:=fopen.hFile;
+		
+		fread.pBuffer:=ADR(tempString);
+		
+		fread.szBuffer:=SIZEOF(tempString);
+		fread(xExecute:=TRUE);
+		IF fread.xDone THEN
+			step:=STEP_CLEANUP;
+			endPos:=TO_INT(StrLenA(ADR(tempString)));
+			startPos:=1; 
+			cleanupCounter:=0;
+			
+			cleanupCount:=TO_INT(endPos/SplitSize);
+			//Simple Round up
+			tmp:=TO_REAL(endPos)/TO_REAL(SplitSize);
+			IF tmp&gt;TO_REAL(cleanupCount) THEN
+				cleanupCount:=cleanupCount+1;
+			END_IF
+			
+		END_IF
+		IF fread.xError THEN
+			step:=STEP_CLOSE;
+			xError:=TRUE;
+		END_IF
+	STEP_CLEANUP:
+		
+		finishPos := MIN(endPos, startPos + SplitSize - 1);
+		pos:=finishPos;
+		lenCopy   := finishPos - startPos + 1;  
+		IF lenCopy&gt;0 THEN
+			STU.StrMidA(ADR(tempString),SIZEOF(tempString),TO_INT(lenCopy),startPos,ADR(subString),TO_UINT(SplitSize+1));
+			CleanupString(); //Save spaces
+			STU.StrConcatA(ADR(subString),ADR(Result),TO_INT(SIZEOF(Result)));
+		END_IF
+		
+		IF finishPos&gt;=endPos THEN 
+			step:=STEP_CLOSE;
+		END_IF
+		startPos:=finishPos+1;
+		cleanupCounter:=cleanupCounter+1;
+		IF cleanupCounter&gt;cleanupCount THEN 
+			step:=STEP_CLOSE;
+		END_IF
+	STEP_CLOSE:
+		fclose.hFile:=fopen.hFile;
+		fclose(xExecute:=TRUE);
+		IF fclose.xDone THEN
+			step:=STEP_FINISH;
+		END_IF
+		IF fclose.xError THEN
+			step:=STEP_FINISH;
+			xError:=TRUE;
+		END_IF
+		
+	STEP_FINISH:
+		IF xAutoReset AND xError THEN
+			Reset();
+		END_IF
+		step:=STEP_IDLE;
+		xDone:=TRUE;
+		xStart:=FALSE;
+		xBusy:=FALSE;
+END_CASE</xhtml>
+          </ST>
+        </body>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="d39502f0-89ba-476e-adfc-0d4881c2dabd">
+              <interface>
+                <returnType>
+                  <BOOL />
+                </returnType>
+              </interface>
+              <body>
+                <ST>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">xStartRE(CLK:=FALSE);
+xError:=FALSE;</xhtml>
+                </ST>
+              </body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="CleanupString" ObjectId="38297fcf-45b1-4268-b8d2-9c64c54fde26">
+              <interface>
+                <returnType>
+                  <BOOL />
+                </returnType>
+                <localVars>
+                  <variable name="StringPtr">
+                    <type>
+                      <pointer>
+                        <baseType>
+                          <array>
+                            <dimension lower="1" upper="GPL_JSON.MAX_JSON_STRING" />
+                            <baseType>
+                              <derived name="ASCII" />
+                            </baseType>
+                          </array>
+                        </baseType>
+                      </pointer>
+                    </type>
+                  </variable>
+                  <variable name="i">
+                    <type>
+                      <UINT />
+                    </type>
+                  </variable>
+                  <variable name="j">
+                    <type>
+                      <UINT />
+                    </type>
+                  </variable>
+                </localVars>
+                <documentation>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">
+|
+| Edit: allow for space symol
+|  
+| Original: 
+| 
+| Author: Tim Van Meppelen, Pro Electric Inc.
+| timv@proelectric.com
+| Date: Oct 9, 2018
+| strip all control characters and spaces from a string EXCEPT space
+</xhtml>
+                </documentation>
+              </interface>
+              <body>
+                <ST>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">StringPtr:=ADR(THIS^.subString);
+FOR i:= 1 TO GPL_JSON.MAX_JSON_STRING DO
+	//IF (StringPtr^[i] &gt;= 1) AND (StringPtr^[i] &lt;= 16#20) THEN
+	IF (StringPtr^[i] &gt;= 1) AND (StringPtr^[i] &lt; 16#20) THEN
+	//match all control and white space characters, except for null AND SPACE, which terminates a string
+		FOR j:= i TO GPL_JSON.MAX_JSON_STRING DO
+			IF (StringPtr^[j] = PRO_JSON.ASCII.NULL) THEN
+			//null character terminates string
+				EXIT;
+			ELSE
+			//shift character array left one
+				StringPtr^[j]:= StringPtr^[j+1];
+			END_IF
+		END_FOR
+		i:= i - 1;	//run loop at same position again
+	ELSIF (StringPtr^[i] = PRO_JSON.ASCII.NULL) THEN
+	//found null character at the end of the string
+		EXIT;
+	END_IF
+END_FOR
+
+CleanupString:= TRUE;
+</xhtml>
+                </ST>
+              </body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>bca6c71f-cfc1-4007-95b8-33f24af472c4</ObjectId>
+          </data>
+        </addData>
+      </pou>
+      <pou name="FB_SaveJSONFile" pouType="functionBlock">
+        <interface>
+          <inputVars>
+            <variable name="xStart">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="sFileName">
+              <type>
+                <string length="255" />
+              </type>
+            </variable>
+            <variable name="pJSOBJ">
+              <type>
+                <pointer>
+                  <baseType>
+                    <array>
+                      <dimension lower="1" upper="GPL_JSON.MAX_VARS" />
+                      <baseType>
+                        <derived name="JSONVAR" />
+                      </baseType>
+                    </array>
+                  </baseType>
+                </pointer>
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">pointer to local structure made up of type JSONVAR</xhtml>
+              </documentation>
+            </variable>
+            <variable name="udiSize">
+              <type>
+                <UDINT />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">SHOULD BE EQUAL TO SIZEOF(JSONOBJ) , //JSONVAR is part of JSON lib</xhtml>
+              </documentation>
+            </variable>
+            <variable name="IgnoreNull">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="FALSE" />
+              </initialValue>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Ignore null objects when exporting (Default: False, do not ignore)</xhtml>
+              </documentation>
+            </variable>
+            <variable name="Format">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="TRUE" />
+              </initialValue>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Format JSON when expoting with Tabs and newlines (Default: True, format it. Format values are library parameters)</xhtml>
+              </documentation>
+            </variable>
+            <variable name="CustomFieldName">
+              <type>
+                <string length="GPL_JSON.MAX_VAR_NAME" />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Name of optional custom field, that will be added to the end of the root  </xhtml>
+              </documentation>
+            </variable>
+            <variable name="pCustomFieldString">
+              <type>
+                <pointer>
+                  <baseType>
+                    <string length="GPL_JSON.MAX_JSON_STRING" />
+                  </baseType>
+                </pointer>
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Pointer to long custom string.   </xhtml>
+              </documentation>
+            </variable>
+          </inputVars>
+          <outputVars>
+            <variable name="xBusy">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xDone">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xError">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+          </outputVars>
+          <localVars>
+            <variable name="state">
+              <type>
+                <derived name="e_SaveReadJSONFileStates" />
+              </type>
+              <initialValue>
+                <simpleValue value="e_SaveReadJSONFileStates.STATE_IDLE" />
+              </initialValue>
+            </variable>
+            <variable name="xAutoReset">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="TRUE" />
+              </initialValue>
+            </variable>
+            <variable name="xStartRE">
+              <type>
+                <derived name="R_TRIG" />
+              </type>
+            </variable>
+            <variable name="fsave">
+              <type>
+                <derived name="FB_SaveTxtFile" />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">Other FB</xhtml>
+              </documentation>
+            </variable>
+            <variable name="ComposeJSON">
+              <type>
+                <derived name="STRUCT_TO_JSON" />
+              </type>
+              <documentation>
+                <xhtml xmlns="http://www.w3.org/1999/xhtml">STRUCT_TO_JSON FB is part of JSON lib</xhtml>
+              </documentation>
+            </variable>
+            <variable name="sContent">
+              <type>
+                <string length="GPL_JSON.MAX_JSON_STRING" />
+              </type>
+            </variable>
+            <variable name="sLastError">
+              <type>
+                <string />
+              </type>
+            </variable>
+            <variable name="sNote">
+              <type>
+                <string />
+              </type>
+              <initialValue>
+                <simpleValue value="'I AM NOTE'" />
+              </initialValue>
+            </variable>
+          </localVars>
+        </interface>
+        <body>
+          <ST>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">xStartRE(CLK:=xStart);
+CASE state OF
+	e_SaveReadJSONFileStates.STATE_IDLE:
+		IF xStartRE.Q THEN
+			state:=e_SaveReadJSONFileStates.STATE_COMPOSE;
+			xDone:=FALSE;
+			xBusy:=TRUE;
+			xError:=FALSE;
+			sLastError:='';
+			sContent:='';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_COMPOSE:
+		IF LEN(CustomFieldName)&gt;0 AND StrLenA(pCustomFieldString)&gt;0 THEN 
+			ComposeJSON.SetCustomField(Name:=CustomFieldName,TextPtr:=pCustomFieldString);
+		END_IF
+		ComposeJSON(
+			JSONString:= ADR(sContent),
+			JSONStringSize:= SIZEOF(sContent),
+			JSONVars:= pJSOBJ,
+			NumberOfVars:= udiSize / SIZEOF(JSONVAR), //JSONVAR is part of JSON lib
+			Execute:=TRUE,
+			IgnoreNull:=IgnoreNull,
+			Format:=Format
+		);
+
+		IF ComposeJSON.Done THEN
+			state:=e_SaveReadJSONFileStates.STATE_SAVE;
+		END_IF
+		IF ComposeJSON.Error THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+			xError:=TRUE;
+			sLastError:='JSON Composing';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_SAVE:
+		fsave.sContent REF=sContent;
+		fsave.sFileName REF=sFileName;
+
+		fsave(xStart:=TRUE);
+
+		IF  fsave.xDone THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+		END_IF
+		IF fsave.xError THEN
+			state:=e_SaveReadJSONFileStates.STATE_FINISH;
+			xError:=TRUE;
+			sLastError:='File saving';
+		END_IF
+
+	e_SaveReadJSONFileStates.STATE_FINISH:
+		xBusy:=FALSE;
+		xDone:=TRUE;
+
+		IF xAutoReset THEN
+			Reset();
+		END_IF
+		
+		state:=e_SaveReadJSONFileStates.STATE_IDLE;
+END_CASE
+</xhtml>
+          </ST>
+        </body>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="3f6821ec-f915-4473-9262-5168c251f73a">
+              <interface>
+                <returnType>
+                  <BOOL />
+                </returnType>
+              </interface>
+              <body>
+                <ST>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">state:=e_SaveReadJSONFileStates.STATE_IDLE;
+xStartRE(CLK:=FALSE);
+sContent:='';
+ComposeJSON(Execute:=FALSE);
+ComposeJSON.ClearString();
+
+xError:=FALSE;
+
+
+Reset:=TRUE;</xhtml>
+                </ST>
+              </body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>cd78e72b-1ff1-47e4-8736-12a6d6636e91</ObjectId>
+          </data>
+        </addData>
+      </pou>
+      <pou name="FB_SaveTxtFile" pouType="functionBlock">
+        <interface>
+          <localVars constant="true">
+            <variable name="SplitSize">
+              <type>
+                <INT />
+              </type>
+              <initialValue>
+                <simpleValue value="1024" />
+              </initialValue>
+            </variable>
+          </localVars>
+          <inputVars>
+            <variable name="xStart">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="sFileName">
+              <type>
+                <derived name="REFERENCE TO STRING(255)" />
+              </type>
+            </variable>
+            <variable name="sContent">
+              <type>
+                <derived name="REFERENCE TO STRING(GPL_JSON.MAX_JSON_STRING)" />
+              </type>
+            </variable>
+          </inputVars>
+          <outputVars>
+            <variable name="xBusy">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xDone">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+            <variable name="xError">
+              <type>
+                <BOOL />
+              </type>
+            </variable>
+          </outputVars>
+          <localVars>
+            <variable name="fopen">
+              <type>
+                <derived name="FILE.Open" />
+              </type>
+            </variable>
+            <variable name="fwrite">
+              <type>
+                <derived name="FILE.Write" />
+              </type>
+            </variable>
+            <variable name="fclose">
+              <type>
+                <derived name="FILE.Close" />
+              </type>
+            </variable>
+            <variable name="step">
+              <type>
+                <derived name="Implicit_Enum__FB_SaveTxtFile__step" />
+              </type>
+              <addData>
+                <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+                  <Attributes>
+                    <Attribute Name="implicit_enum_type" Value="" />
+                  </Attributes>
+                </data>
+              </addData>
+            </variable>
+            <variable name="xStartRE">
+              <type>
+                <derived name="R_TRIG" />
+              </type>
+            </variable>
+            <variable name="xAutoReset">
+              <type>
+                <BOOL />
+              </type>
+              <initialValue>
+                <simpleValue value="TRUE" />
+              </initialValue>
+            </variable>
+          </localVars>
+          <addData>
+            <data name="http://www.3s-software.com/plcopenxml/attributes" handleUnknown="implementation">
+              <Attributes>
+                <Attribute Name="contains_implicit_enum" />
+              </Attributes>
+            </data>
+          </addData>
+        </interface>
+        <body>
+          <ST>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">xStartRE(CLK:=xStart);
+CASE step OF
+	STATE_IDLE:
+		IF xStartRE.Q AND NOT xError THEN
+			step:=STATE_OPEN;
+			xDone:=FALSE;
+			xBusy:=TRUE;
+			xError:=FALSE;			
+		END_IF
+		fopen(xExecute:=FALSE);
+    	fwrite(xExecute:=FALSE);
+		fclose(xExecute:=FALSE);
+
+	STATE_OPEN:
+		fopen.sFileName:=sFileName;
+		fopen.eFileMode:=FILE.MODE.MWRITE;
+		fopen.xExclusive:=TRUE;
+		fopen(xExecute:=TRUE);
+		IF fopen.xDone THEN
+			step:=STATE_WRITE;
+		END_IF
+		IF fopen.xError THEN
+			step:=STATE_CLOSE;
+			xError:=TRUE;
+		END_IF
+
+	STATE_WRITE:
+		fwrite.hFile:=fopen.hFile;
+		fwrite.pBuffer:=ADR(sContent);
+		fwrite.szSize:=TO___UXINT(STU.StrLenA(ADR(sContent)));
+		fwrite(xExecute:=TRUE);		
+		IF fWrite.xDone THEN
+			step:=STATE_CLOSE;
+		END_IF
+		IF fWrite.xError THEN
+			step:=STATE_CLOSE;
+			xError:=TRUE;
+		END_IF
+		
+	STATE_CLOSE:
+		fclose.hFile:=fopen.hFile;
+		fclose(xExecute:=TRUE);
+		IF fclose.xDone THEN
+			step:=STEP_FINISH;
+		END_IF
+		IF fclose.xError THEN
+			step:=STEP_FINISH;
+			xError:=TRUE;
+		END_IF
+		
+	STEP_FINISH:
+		IF xAutoReset THEN
+			Reset();
+		END_IF
+		step:=STATE_IDLE;
+		xDone:=TRUE;
+		xStart:=FALSE;
+		xBusy:=FALSE;
+
+END_CASE</xhtml>
+          </ST>
+        </body>
+        <addData>
+          <data name="http://www.3s-software.com/plcopenxml/method" handleUnknown="implementation">
+            <Method name="Reset" ObjectId="75c54380-17c9-4cff-aa08-e4317d1a50a7">
+              <interface>
+                <returnType>
+                  <BOOL />
+                </returnType>
+              </interface>
+              <body>
+                <ST>
+                  <xhtml xmlns="http://www.w3.org/1999/xhtml">xError:=FALSE;
+step:=STATE_IDLE;
+
+xStartRE(CLK:=FALSE);</xhtml>
+                </ST>
+              </body>
+              <addData />
+            </Method>
+          </data>
+          <data name="http://www.3s-software.com/plcopenxml/objectid" handleUnknown="discard">
+            <ObjectId>a69d739c-ee4f-466e-a0c4-5175a7040b84</ObjectId>
+          </data>
+        </addData>
+      </pou>
+    </pous>
+  </types>
+  <instances>
+    <configurations />
+  </instances>
+  <addData>
+    <data name="http://www.3s-software.com/plcopenxml/projectstructure" handleUnknown="discard">
+      <ProjectStructure>
+        <Folder Name="utils">
+          <Folder Name="PROJSON">
+            <Object Name="e_SaveReadJSONFileStates" ObjectId="3d0f48de-b9d5-400f-93f8-ba905ed4ddff" />
+            <Object Name="FB_ReadJSONFile" ObjectId="88a5bfd3-a029-4ebe-b27f-b22064eb90fa">
+              <Object Name="Reset" ObjectId="16fc7399-90e7-49b7-b8c0-ab1c715b357c" />
+            </Object>
+            <Object Name="FB_ReadTxtFile" ObjectId="bca6c71f-cfc1-4007-95b8-33f24af472c4">
+              <Object Name="Reset" ObjectId="d39502f0-89ba-476e-adfc-0d4881c2dabd" />
+              <Object Name="CleanupString" ObjectId="38297fcf-45b1-4268-b8d2-9c64c54fde26" />
+            </Object>
+            <Object Name="FB_SaveJSONFile" ObjectId="cd78e72b-1ff1-47e4-8736-12a6d6636e91">
+              <Object Name="Reset" ObjectId="3f6821ec-f915-4473-9262-5168c251f73a" />
+            </Object>
+            <Object Name="FB_SaveTxtFile" ObjectId="a69d739c-ee4f-466e-a0c4-5175a7040b84">
+              <Object Name="Reset" ObjectId="75c54380-17c9-4cff-aa08-e4317d1a50a7" />
+            </Object>
+          </Folder>
+        </Folder>
+      </ProjectStructure>
+    </data>
+  </addData>
+</project>
